@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -25,6 +26,15 @@ async function run() {
 
     const db = client.db("bistroDB");
 
+    // AUTHENTICATION
+    app.post("/jwt", async (req, res) => {
+      const body = req.body;
+      const token = jwt.sign(body, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
+      res.send({ token });
+    });
+
     // Users Collection
     const usersCollection = db.collection("users");
 
@@ -44,6 +54,16 @@ async function run() {
       }
 
       const result = await usersCollection.insertOne(body);
+      res.send(result);
+    });
+
+    app.patch("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const body = req.body;
+      const query = { _id: new ObjectId(id) };
+      const update = { $set: body };
+      const options = { upsert: false };
+      const result = await usersCollection.updateOne(query, update, options);
       res.send(result);
     });
 
