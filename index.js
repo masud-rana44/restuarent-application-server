@@ -25,6 +25,35 @@ async function run() {
 
     const db = client.db("bistroDB");
 
+    // Users Collection
+    const usersCollection = db.collection("users");
+
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const body = req.body;
+
+      const isAlreadyExist = await usersCollection.findOne({
+        email: body.email,
+      });
+      if (isAlreadyExist) {
+        return res.send({ message: "User already exists" });
+      }
+
+      const result = await usersCollection.insertOne(body);
+      res.send(result);
+    });
+
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // Menus Collection
     const menusCollection = db.collection("menus");
 
@@ -44,8 +73,16 @@ async function run() {
     // Cart Collection
     const cartCollection = db.collection("cart");
 
+    app.get("/cart", async (req, res) => {
+      const email = req.query.email;
+      const query = { email };
+      const result = await cartCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/cart", async (req, res) => {
       const body = req.body;
+
       const result = await cartCollection.insertOne(body);
       res.send(result);
     });
