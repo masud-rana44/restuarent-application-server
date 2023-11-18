@@ -124,8 +124,62 @@ async function run() {
     // Menus Collection
     const menusCollection = db.collection("menus");
 
+    // get all menus
     app.get("/menus", async (req, res) => {
       const result = await menusCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    // get a single menu
+    app.get("/menus/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menusCollection.findOne(query);
+      res.send(result);
+    });
+
+    // add a menu
+    app.post("/menus", verifyToken, verifyAdmin, async (req, res) => {
+      const item = req.body;
+      const { name, price, image, category, recipe } = item;
+
+      // check all fields are filled
+      if (!name || !price || !image || !category || !recipe) {
+        return res.status(400).send({ message: "Please fill all the fields" });
+      }
+
+      // check if the item already exists
+      const isAlreadyExist = await menusCollection.findOne({ name });
+      if (isAlreadyExist) {
+        return res.status(400).send({ message: "Item already exists" });
+      }
+
+      const result = await menusCollection.insertOne({
+        name,
+        price,
+        image,
+        category,
+        recipe,
+      });
+      res.send(result);
+    });
+
+    // update a menu
+    app.patch("/menus/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const updatedItem = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = { $sec: updatedItem };
+      const options = { upsert: false };
+      const result = await menusCollection.updateOne(query, updateDoc, options);
+      res.send(result);
+    });
+
+    // delete a menu
+    app.delete("/menus/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menusCollection.deleteOne(query);
       res.send(result);
     });
 
