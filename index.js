@@ -271,6 +271,28 @@ async function run() {
       res.send({ resultOrder, resultDelete });
     });
 
+    // -------------------------
+    // Stats
+    // -------------------------
+    app.get("/admin-stats", verifyToken, verifyAdmin, async (req, res) => {
+      const usersQuery = { role: "user" };
+      const users = await usersCollection.estimatedDocumentCount(usersQuery);
+      const orders = await orderCollection.estimatedDocumentCount();
+      const menus = await menusCollection.estimatedDocumentCount();
+      const revenues = await orderCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              total: { $sum: "$total" },
+            },
+          },
+        ])
+        .toArray();
+
+      res.send({ users, orders, menus, revenues: revenues[0].total });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
