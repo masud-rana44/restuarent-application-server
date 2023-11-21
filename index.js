@@ -232,6 +232,45 @@ async function run() {
       res.send(result);
     });
 
+    // Order Collection
+    const orderCollection = db.collection("order");
+
+    app.get("/orders", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await orderCollection.find({}).toArray();
+      res.send(result);
+    });
+
+    app.get("/orders/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+
+      const result = await orderCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/orders", verifyToken, async (req, res) => {
+      const order = req.body;
+      const resultOrder = await orderCollection.insertOne(order);
+
+      // delete the cart items
+      // const query = {
+      //   email: order.email,
+      // };
+
+      const query = {
+        _id: {
+          $in: order.cartIds.map((id) => new ObjectId(id)),
+        },
+      };
+
+      const resultDelete = await cartCollection.deleteMany(query);
+
+      res.send({ resultOrder, resultDelete });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
