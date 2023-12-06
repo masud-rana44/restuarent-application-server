@@ -4,13 +4,16 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const formData = require("form-data");
-const Mailgun = require("mailgun.js");
-const mailgun = new Mailgun(formData);
-const mg = mailgun.client({
-  username: "api",
-  key: process.env.MAILGUN_API_KEY,
-});
+// const formData = require("form-data");
+// const Mailgun = require("mailgun.js");
+// const mailgun = new Mailgun(formData);
+// const mg = mailgun.client({
+//   username: "api",
+//   key: process.env.MAILGUN_API_KEY,
+// });
+
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const app = express();
 
@@ -276,20 +279,37 @@ async function run() {
       const resultDelete = await cartCollection.deleteMany(query);
 
       // Send the confirmation email to the customer
-      const messageData = {
-        from: "Bistro Boss <me@sandboxb4885b95f4d74159a01abd30d2001a26.mailgun.org>",
+      // const messageData = {
+      //   from: "Bistro Boss <me@sandboxb4885b95f4d74159a01abd30d2001a26.mailgun.org>",
+      //   to: "mdmasudrana4488@gmail.com",
+      //   subject: "Thank You For Your Order",
+      //   html: `<div>Congratulations! Your order is successful. Transaction id: <strong>${order.paymentId}</strong> <p>Feel free to put a reviews, Thank you.</p></div>`,
+      // };
+
+      // mg.messages
+      //   .create(process.env.MAILGUN_DOMAIN, messageData)
+      //   .then((res) => {
+      //     console.log(res);
+      //   })
+      //   .catch((err) => {
+      //     console.error(err);
+      //   });
+
+      const msg = {
         to: "mdmasudrana4488@gmail.com",
-        subject: "Thank You For Your Order",
-        html: `<div>Congratulations! Your order is successful. Transaction id: <strong>${order.paymentId}</strong> <p>Feel free to put a reviews, Thank you.</p></div>`,
+        from: "mdmasudrana4488@gmail.com",
+        subject: "Sending with SendGrid is Fun",
+        text: "and easy to do anywhere, even with Node.js",
+        html: "<strong>and easy to do anywhere, even with Node.js</strong>",
       };
 
-      mg.messages
-        .create(process.env.MAILGUN_DOMAIN, messageData)
-        .then((res) => {
-          console.log(res);
+      sgMail
+        .send(msg)
+        .then(() => {
+          console.log("Email sent");
         })
-        .catch((err) => {
-          console.error(err);
+        .catch((error) => {
+          console.error(error);
         });
 
       res.send({ resultOrder, resultDelete });
