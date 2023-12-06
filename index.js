@@ -276,6 +276,21 @@ async function run() {
       const resultDelete = await cartCollection.deleteMany(query);
 
       // Send the confirmation email to the customer
+      const messageData = {
+        from: "Bistro Boss <me@sandboxb4885b95f4d74159a01abd30d2001a26.mailgun.org>",
+        to: "mdmasudrana4488@gmail.com",
+        subject: "Thank You For Your Order",
+        html: `<div>Congratulations! Your order is successful. Transaction id: <strong>${order.paymentId}</strong> <p>Feel free to put a reviews, Thank you.</p></div>`,
+      };
+
+      mg.messages
+        .create(process.env.MAILGUN_DOMAIN, messageData)
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((err) => {
+          console.error(err);
+        });
 
       res.send({ resultOrder, resultDelete });
     });
