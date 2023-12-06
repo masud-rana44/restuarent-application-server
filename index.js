@@ -4,6 +4,13 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const formData = require("form-data");
+const Mailgun = require("mailgun.js");
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: "api",
+  key: process.env.MAILGUN_API_KEY,
+});
 
 const app = express();
 
@@ -268,6 +275,8 @@ async function run() {
 
       const resultDelete = await cartCollection.deleteMany(query);
 
+      // Send the confirmation email to the customer
+
       res.send({ resultOrder, resultDelete });
     });
 
@@ -291,6 +300,32 @@ async function run() {
         .toArray();
 
       res.send({ users, orders, menus, revenues: revenues[0].total });
+    });
+
+    app.get("/orders-stats", async (req, res) => {
+      const result = await orderCollection
+        .aggregate([
+          {
+            $unwind: "$menuIds",
+          },
+          {
+            $lookup: {
+              from: "menus",
+              localField: "menuIds",
+              foreignField: "_id",
+              as: "menu",
+            },
+          },
+          // {
+          //   $group: {
+          //     _id: null,
+          //     total: { $sum: "$total" },
+          //   },
+          // },
+        ])
+        .toArray();
+
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
